@@ -1,87 +1,54 @@
-<!DOCTYPE html><html lang="ru">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Бобер Банк</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      background-color: #f5f5f5;
-      color: #333;
-    }
-    header {
-      background-color: #4a2e00;
-      color: white;
-      padding: 20px;
-      text-align: center;
-    }
-    header h1 {
-      margin: 0;
-    }
-    nav {
-      background-color: #643a12;
-      display: flex;
-      justify-content: center;
-      gap: 20px;
-      padding: 10px;
-    }
-    nav a {
-      color: white;
-      text-decoration: none;
-    }
-    .hero {
-      background: url('https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Beaver_in_montana.jpg/1280px-Beaver_in_montana.jpg') center/cover;
-      color: white;
-      text-align: center;
-      padding: 100px 20px;
-    }
-    .hero h2 {
-      font-size: 2.5em;
-      margin-bottom: 10px;
-    }
-    .section {
-      padding: 40px 20px;
-      max-width: 1000px;
-      margin: auto;
-    }
-    .footer {
-      background-color: #4a2e00;
-      color: white;
-      text-align: center;
-      padding: 20px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Бобер Банк</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header>
-    <h1>Бобер Банк</h1>
-    <p>С нами надёжно, как у бобра в хатке</p>
-  </header>
-  <nav>
-    <a href="#about">О нас</a>
-    <a href="#services">Услуги</a>
-    <a href="#contact">Контакты</a>
-  </nav>
-  <section class="hero">
-   color : black
-    <h2>Добро пожаловать в Бобер Банк</h2>
-    <p>Ваш надёжный финансовый партнёр</p>
-  </section>
-  <section id="about" class="section">
-    <h2>О нас</h2>
-    <p>Бобер Банк — это инновационный банк с традициями. Мы заботимся о ваших финансах и строим с вами будущее.</p>
-  </section>
-  <section id="services" class="section">
-    <h2>Наши услуги</h2>
-    <ul>
-      <li>Вклады и сбережения</li>
-      <li>Ипотечное и потребительское кредитование</li>
-      <li>Онлайн-банкинг и мобильное приложение</li>
-      <li>Финансовые консультации</li>
-    </ul>
-  </section>
-  <section id="contact" class="section">
-    <h2>Контакты</h2>
-    <p>Email
+    <header class="header">
+        <div class="logo">Бобер Банк</div>
+        <nav class="menu">
+            <ul>
+                <li><a href="#services">Наши услуги</a></li>
+                <li><a href="#about">О банке</a></li>
+                <li><a href="#contacts">Контакты</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <section id="hero">
+        <h1>Ваш надежный финансовый партнер</h1>
+        <button onclick="showMessage()">Узнать больше</button>
+    </section>
+
+    <section id="services">
+        <h2>Наши услуги:</h2>
+        <ul>
+            <li>Депозиты</li>
+            <li>Кредитование</li>
+            <li>Карты и платежи</li>
+        </ul>
+    </section>
+
+    <section id="about">
+        <h2>О Бобер Банке:</h2>
+        <p>Мы предлагаем лучшие финансовые решения для наших клиентов.</p>
+    </section>
+
+    <section id="contacts">
+        <h2>Свяжитесь с нами:</h2>
+        <address>
+            Адрес: г. Москва, ул. Тверская, д. 1<br>
+            Телефон: +7 (495) 123-45-67
+        </address>
+    </section>
+
+    <footer>
+        © 2025 Бобер Банк
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
