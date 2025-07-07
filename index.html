@@ -26,25 +26,15 @@
   const canvas = document.getElementById("game");
   const ctx = canvas.getContext("2d");
 
-  function resizeCanvas() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-  }
-
-  window.addEventListener("resize", resizeCanvas);
-  resizeCanvas();
-
-  // Игровые переменные
   let gravity = 0.6;
   let isJumping = false;
   let score = 0;
   let highScore = 0;
-
-  const groundY = canvas.height - 100;
+  let groundY;
 
   const player = {
-    x: canvas.width - 100,
-    y: groundY - 50,
+    x: 0, // обновим позже
+    y: 0,
     width: 30,
     height: 50,
     color: "white",
@@ -53,6 +43,19 @@
   };
 
   const obstacles = [];
+
+  function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    groundY = canvas.height - 100;
+
+    player.x = canvas.width - 100;
+    player.y = groundY - player.height;
+  }
+
+  window.addEventListener("resize", resizeCanvas);
+  resizeCanvas(); // инициализация
 
   function spawnObstacle() {
     const isSpike = Math.random() < 0.5;
@@ -70,7 +73,6 @@
   setInterval(spawnObstacle, 1200);
 
   function update() {
-    // Обновление позиции игрока
     player.dy += gravity;
     player.y += player.dy;
 
@@ -80,12 +82,10 @@
       isJumping = false;
     }
 
-    // Обновление и перемещение препятствий
     for (let i = 0; i < obstacles.length; i++) {
       obstacles[i].x += 5;
     }
 
-    // Проверка столкновений
     for (let obs of obstacles) {
       if (
         player.x < obs.x + obs.width &&
@@ -98,7 +98,6 @@
       }
     }
 
-    // Очистка старых препятствий и увеличение счёта
     while (obstacles.length > 0 && obstacles[0].x > canvas.width) {
       obstacles.shift();
       score++;
@@ -118,15 +117,12 @@
   function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Земля
     ctx.fillStyle = "#444";
     ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
 
-    // Игрок
     ctx.fillStyle = player.color;
     ctx.fillRect(player.x, player.y, player.width, player.height);
 
-    // Препятствия
     for (let obs of obstacles) {
       ctx.fillStyle = obs.color;
       if (obs.type === "spike") {
