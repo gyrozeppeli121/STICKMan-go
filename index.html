@@ -2,138 +2,325 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Стикман</title>
+  <title>Стикман Бегун</title>
   <style>
-    html, body {
+    body {
       margin: 0;
-      padding: 0;
       overflow: hidden;
+      font-family: sans-serif;
+      background: linear-gradient(to bottom, #87ceeb, #ffffff);
     }
     canvas {
       display: block;
-      background: linear-gradient(to bottom, #333, #111);
+    }
+    #ui, #menu, #shop {
+      position: absolute;
+      color: white;
+      font-weight: bold;
+      text-shadow: 2px 2px 4px #000;
+      z-index: 10;
+    }
+    #ui {
+      top: 10px;
+      left: 10px;
+      font-size: 18px;
+      display: none;
+    }
+    #menu, #shop {
+      top: 30%;
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
+      display: none;
+    }
+    #menu h1, #shop h1 {
+      font-size: 48px;
+      margin-bottom: 20px;
+    }
+    button {
+      font-size: 20px;
+      padding: 10px 20px;
+      margin: 10px;
+      cursor: pointer;
+      border: none;
+      border-radius: 10px;
+      background-color: #444;
+      color: white;
+    }
+    .skin-option {
+      display: inline-block;
+      width: 40px;
+      height: 40px;
+      margin: 5px;
+      border: 2px solid white;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .locked {
+      opacity: 0.3;
     }
   </style>
 </head>
 <body>
-<canvas id="game"></canvas>
+<canvas id="gameCanvas"></canvas>
+<div id="ui">Очки: 0 | Жизни: 3 | Монеты: 0 | [P] Пауза</div>
+
+<div id="menu">
+  <h1>Стикман Бегун</h1>
+  <p>Выберите скин:</p>
+  <div id="skins"></div>
+  <button onclick="startGame()">Играть</button>
+  <button onclick="openShop()">Магазин</button>
+</div>
+
+<div id="shop">
+  <h1>Магазин</h1>
+  <div id="shopItems"></div>
+  <button onclick="closeShop()">Назад</button>
+</div>
 
 <script>
-  const canvas = document.getElementById("game");
-  const ctx = canvas.getContext("2d");
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
 
-  function resize() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    groundY = canvas.height - 100;
-    player.x = canvas.width - 100;
-    player.y = groundY - player.height;
-  }
+let selectedColor = "black";
+let coins = 0;
+let unlockedSkins = ["black"];
 
-  let groundY = 0;
+const availableSkins = [
+  { color: "black", cost: 0 },
+  { color: "red", cost: 10 },
+  { color: "blue", cost: 20 },
+  { color: "green", cost: 30 },
+  { color: "orange", cost: 40 }
+];
 
-  const player = {
-    x: 0,
-    y: 0,
-    width: 30,
-    height: 50,
-    dy: 0,
-    color: 'white',
-    jumpPower: -12
-  };
-
-  let isJumping = false;
-  const gravity = 0.6;
-  const obstacles = [];
-  let score = 0;
-
-  function spawnObstacle() {
-    const spike = Math.random() < 0.5;
-    obstacles.push({
-      x: -50,
-      y: groundY - (spike ? 20 : 40),
-      width: spike ? 20 : 40,
-      height: spike ? 20 : 40,
-      color: spike ? "red" : "gray",
-      type: spike ? "spike" : "block"
-    });
-  }
-
-  setInterval(spawnObstacle, 1200);
-
-  function update() {
-    player.dy += gravity;
-    player.y += player.dy;
-
-    if (player.y + player.height >= groundY) {
-      player.y = groundY - player.height;
-      player.dy = 0;
-      isJumping = false;
-    }
-
-    for (let obs of obstacles) obs.x += 5;
-
-    for (let obs of obstacles) {
-      if (
-        player.x < obs.x + obs.width &&
-        player.x + player.width > obs.x &&
-        player.y < obs.y + obs.height &&
-        player.y + player.height > obs.y
-      ) {
-        alert("Ты проиграл! Счёт: " + score);
-        location.reload();
+function refreshSkinMenu() {
+  const skinContainer = document.getElementById("skins");
+  skinContainer.innerHTML = "";
+  availableSkins.forEach(skin => {
+    const el = document.createElement("div");
+    el.className = "skin-option";
+    el.style.backgroundColor = skin.color;
+    if (!unlockedSkins.includes(skin.color)) el.classList.add("locked");
+    el.onclick = () => {
+      if (unlockedSkins.includes(skin.color)) {
+        selectedColor = skin.color;
+        document.querySelectorAll('.skin-option').forEach(e => e.style.border = "2px solid white");
+        el.style.border = "4px solid yellow";
       }
-    }
-
-    while (obstacles.length > 0 && obstacles[0].x > canvas.width) {
-      obstacles.shift();
-      score++;
-    }
-  }
-
-  function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = '#444';
-    ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
-
-    ctx.fillStyle = player.color;
-    ctx.fillRect(player.x, player.y, player.width, player.height);
-
-    for (let obs of obstacles) {
-      ctx.fillStyle = obs.color;
-      if (obs.type === "spike") {
-        ctx.beginPath();
-        ctx.moveTo(obs.x, obs.y + obs.height);
-        ctx.lineTo(obs.x + obs.width / 2, obs.y);
-        ctx.lineTo(obs.x + obs.width, obs.y + obs.height);
-        ctx.closePath();
-        ctx.fill();
-      } else {
-        ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
-      }
-    }
-
-    ctx.fillStyle = "white";
-    ctx.font = "20px Arial";
-    ctx.fillText("Счёт: " + score, 20, 40);
-  }
-
-  function gameLoop() {
-    update();
-    draw();
-    requestAnimationFrame(gameLoop);
-  }
-
-  document.addEventListener("keydown", e => {
-    if ((e.code === "Space" || e.code === "ArrowUp") && !isJumping) {
-      player.dy = player.jumpPower;
-      isJumping = true;
-    }
+    };
+    skinContainer.appendChild(el);
   });
+}
 
-  window.addEventListener("resize", resize);
-  resize();
-  gameLoop();
+function openShop() {
+  document.getElementById("menu").style.display = "none";
+  const shop = document.getElementById("shop");
+  const container = document.getElementById("shopItems");
+  container.innerHTML = "";
+  availableSkins.forEach(skin => {
+    if (skin.cost === 0) return;
+    const btn = document.createElement("button");
+    btn.textContent = unlockedSkins.includes(skin.color)
+      ? ${skin.color} (куплен)
+      : ${skin.color} — ${skin.cost} монет;
+    btn.disabled = unlockedSkins.includes(skin.color);
+    btn.onclick = () => {
+      if (coins >= skin.cost && !unlockedSkins.includes(skin.color)) {
+        coins -= skin.cost;
+        unlockedSkins.push(skin.color);
+        alert(Скин ${skin.color} куплен!);
+        openShop();
+      }
+    };
+    container.appendChild(btn);
+  });
+  shop.style.display = "block";
+}
+
+function closeShop() {
+  document.getElementById("shop").style.display = "none";
+  document.getElementById("menu").style.display = "block";
+  refreshSkinMenu();
+}
+
+let player = {
+  x: 100,
+  y: 0,
+  width: 50,
+  height: 80,
+  color: "black",
+  velocityY: 0,
+  gravity: 1.5,
+  jumping: false,
+  frame: 0
+};
+
+let ground = canvas.height - 50;
+let spikes = [], blocks = [], coinList = [], boss = null;
+let score = 0, lives = 3, paused = false, started = false, gameSpeed = 6;
+  function drawPlayer() {
+  ctx.save();
+  ctx.translate(player.x, player.y);
+  ctx.fillStyle = player.color;
+  const legOffset = Math.sin(player.frame / 5) * 5;
+  const armOffset = Math.cos(player.frame / 5) * 5;
+  ctx.beginPath(); ctx.arc(25, 10, 10, 0, Math.PI * 2); ctx.fill();
+  ctx.fillRect(22, 20, 6, 30);
+  ctx.fillRect(15 + armOffset, 25, 5, 20);
+  ctx.fillRect(30 - armOffset, 25, 5, 20);
+  ctx.fillRect(20 + legOffset, 50, 5, 20);
+  ctx.fillRect(25 - legOffset, 50, 5, 20);
+  ctx.restore();
+  player.frame++;
+}
+
+function jump() {
+  if (!player.jumping && started) {
+    player.velocityY = -20;
+    player.jumping = true;
+  }
+}
+
+document.addEventListener("keydown", e => {
+  if (e.code === "Space") jump();
+  else if (e.code === "KeyP" && started) paused = !paused;
+});
+canvas.addEventListener("mousedown", jump);
+canvas.addEventListener("touchstart", e => {
+  e.preventDefault(); jump();
+}, { passive: false });
+
+function startGame() {
+  document.getElementById("menu").style.display = "none";
+  document.getElementById("ui").style.display = "block";
+  started = true;
+  player.color = selectedColor;
+  player.y = ground - player.height;
+}
+
+function spawnSpike() {
+  spikes.push({ x: canvas.width + Math.random() * 200, y: ground - 30, width: 30, height: 30, color: "red" });
+}
+function spawnBlock() {
+  blocks.push({ x: canvas.width + Math.random() * 300, y: ground - 80, width: 60, height: 30, color: "gray" });
+}
+function spawnCoin() {
+  coinList.push({ x: canvas.width + Math.random() * 300, y: ground - 100, radius: 10 });
+}
+function spawnBoss() {
+  boss = { x: canvas.width, y: ground - 100, width: 100, height: 100, hp: 3 };
+}
+
+function drawObstacle(ob, isBlock = false) {
+  ctx.fillStyle = ob.color;
+  ctx.fillRect(ob.x, ob.y, ob.width, ob.height);
+  if (!isBlock) {
+    ctx.beginPath();
+    ctx.moveTo(ob.x, ob.y + ob.height);
+    ctx.lineTo(ob.x + ob.width / 2, ob.y);
+    ctx.lineTo(ob.x + ob.width, ob.y + ob.height);
+    ctx.fill();
+  }
+}
+
+function checkCollision(rect) {
+  return player.x < rect.x + rect.width &&
+         player.x + player.width > rect.x &&
+         player.y < rect.y + rect.height &&
+         player.y + player.height > rect.y;
+}
+
+function drawBackground() {
+  ctx.fillStyle = "#228B22";
+  ctx.fillRect(0, ground, canvas.width, canvas.height - ground);
+  ctx.fillStyle = "#fff";
+  for (let i = 0; i < canvas.width; i += 200) {
+    ctx.beginPath();
+    ctx.arc(i + (Date.now() * 0.05 % 200), 100, 30, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function gameLoop() {
+  if (started && !paused) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawBackground();
+
+    player.y += player.velocityY;
+    player.velocityY += player.gravity;
+    if (player.y + player.height > ground) {
+      player.y = ground - player.height;
+      player.jumping = false;
+    }
+
+    drawPlayer();
+
+    if (Math.random() < 0.02) spawnSpike();
+    if (Math.random() < 0.01) spawnBlock();
+    if (Math.random() < 0.02) spawnCoin();
+    if (score > 0 && score % 25 === 0 && boss === null) spawnBoss();
+
+    spikes.forEach(spike => {
+      spike.x -= gameSpeed;
+      drawObstacle(spike);
+      if (checkCollision(spike)) {
+        spikes.splice(spikes.indexOf(spike), 1);
+        lives--;
+        if (lives <= 0) {
+          alert("Игра окончена! Очки: " + score);
+          document.location.reload();
+        }
+      }
+    });
+
+    blocks.forEach(block => {
+      block.x -= gameSpeed;
+      drawObstacle(block, true);
+    });
+
+    coinList.forEach((coin, i) => {
+      coin.x -= gameSpeed;
+      ctx.beginPath();
+      ctx.arc(coin.x, coin.y, coin.radius, 0, Math.PI * 2);
+      ctx.fillStyle = "gold";
+      ctx.fill();
+      if (Math.abs(player.x - coin.x) < 30 && Math.abs(player.y - coin.y) < 30) {
+        coinList.splice(i, 1);
+        coins++;
+      }
+    });
+
+    if (boss) {
+      boss.x -= gameSpeed / 2;
+      ctx.fillStyle = "purple";
+      ctx.fillRect(boss.x, boss.y, boss.width, boss.height);
+      ctx.fillStyle = "white";
+      ctx.fillText("Босс HP: " + boss.hp, boss.x, boss.y - 10);
+      if (checkCollision(boss)) {
+        lives = 0;
+        alert("Босс победил! Очки: " + score);
+        document.location.reload();
+      }
+      if (boss.x + boss.width < 0) boss = null;
+    }
+
+    spikes = spikes.filter(sp => sp.x + sp.width > 0);
+    blocks = blocks.filter(b => b.x + b.width > 0);
+    coinList = coinList.filter(c => c.x + c.radius > 0);
+
+    score++;
+    document.getElementById("ui").textContent = Очки: ${score} | Жизни: ${lives} | Монеты: ${coins} | [P] Пауза;
+  }
+
+  requestAnimationFrame(gameLoop);
+}
+
+refreshSkinMenu();
+gameLoop();
 </script>
 </body>
 </html>
