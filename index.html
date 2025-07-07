@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Стикман</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+    canvas {
+      display: block;
+      background: linear-gradient(to bottom, #333, #111);
+    }
+  </style>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<script>
+  const canvas = document.getElementById("game");
+  const ctx = canvas.getContext("2d");
+
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    groundY = canvas.height - 100;
+    player.x = canvas.width - 100;
+    player.y = groundY - player.height;
+  }
+
+  let groundY = 0;
+
+  const player = {
+    x: 0,
+    y: 0,
+    width: 30,
+    height: 50,
+    dy: 0,
+    color: 'white',
+    jumpPower: -12
+  };
+
+  let isJumping = false;
+  const gravity = 0.6;
+  const obstacles = [];
+  let score = 0;
+
+  function spawnObstacle() {
+    const spike = Math.random() < 0.5;
+    obstacles.push({
+      x: -50,
+      y: groundY - (spike ? 20 : 40),
+      width: spike ? 20 : 40,
+      height: spike ? 20 : 40,
+      color: spike ? "red" : "gray",
+      type: spike ? "spike" : "block"
+    });
+  }
+
+  setInterval(spawnObstacle, 1200);
+
+  function update() {
+    player.dy += gravity;
+    player.y += player.dy;
+
+    if (player.y + player.height >= groundY) {
+      player.y = groundY - player.height;
+      player.dy = 0;
+      isJumping = false;
+    }
+
+    for (let obs of obstacles) obs.x += 5;
+
+    for (let obs of obstacles) {
+      if (
+        player.x < obs.x + obs.width &&
+        player.x + player.width > obs.x &&
+        player.y < obs.y + obs.height &&
+        player.y + player.height > obs.y
+      ) {
+        alert("Ты проиграл! Счёт: " + score);
+        location.reload();
+      }
+    }
+
+    while (obstacles.length > 0 && obstacles[0].x > canvas.width) {
+      obstacles.shift();
+      score++;
+    }
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#444';
+    ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
+
+    ctx.fillStyle = player.color;
+    ctx.fillRect(player.x, player.y, player.width, player.height);
+
+    for (let obs of obstacles) {
+      ctx.fillStyle = obs.color;
+      if (obs.type === "spike") {
+        ctx.beginPath();
+        ctx.moveTo(obs.x, obs.y + obs.height);
+        ctx.lineTo(obs.x + obs.width / 2, obs.y);
+        ctx.lineTo(obs.x + obs.width, obs.y + obs.height);
+        ctx.closePath();
+        ctx.fill();
+      } else {
+        ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+      }
+    }
+
+    ctx.fillStyle = "white";
+    ctx.font = "20px Arial";
+    ctx.fillText("Счёт: " + score, 20, 40);
+  }
+
+  function gameLoop() {
+    update();
+    draw();
+    requestAnimationFrame(gameLoop);
+  }
+
+  document.addEventListener("keydown", e => {
+    if ((e.code === "Space" || e.code === "ArrowUp") && !isJumping) {
+      player.dy = player.jumpPower;
+      isJumping = true;
+    }
+  });
+
+  window.addEventListener("resize", resize);
+  resize();
+  gameLoop();
+</script>
+</body>
+</html>
