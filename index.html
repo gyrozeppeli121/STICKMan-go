@@ -1,54 +1,135 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Бобер Банк</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <title>Бегущий Стикман</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background-color: #222;
+    }
+    canvas {
+      display: block;
+      background: linear-gradient(to bottom, #333, #111);
+    }
+  </style>
 </head>
 <body>
-    <header class="header">
-        <div class="logo">Бобер Банк</div>
-        <nav class="menu">
-            <ul>
-                <li><a href="#services">Наши услуги</a></li>
-                <li><a href="#about">О банке</a></li>
-                <li><a href="#contacts">Контакты</a></li>
-            </ul>
-        </nav>
-    </header>
+<canvas id="game" width="800" height="400"></canvas>
 
-    <section id="hero">
-        <h1>Ваш надежный финансовый партнер</h1>
-        <button onclick="showMessage()">Узнать больше</button>
-    </section>
+<script>
+  const canvas = document.getElementById("game");
+  const ctx = canvas.getContext("2d");
 
-    <section id="services">
-        <h2>Наши услуги:</h2>
-        <ul>
-            <li>Депозиты</li>
-            <li>Кредитование</li>
-            <li>Карты и платежи</li>
-        </ul>
-    </section>
+  let gravity = 0.6;
+  let isJumping = false;
 
-    <section id="about">
-        <h2>О Бобер Банке:</h2>
-        <p>Мы предлагаем лучшие финансовые решения для наших клиентов.</p>
-    </section>
+  const player = {
+    x: 700,
+    y: 300,
+    width: 30,
+    height: 50,
+    color: "white",
+    dy: 0,
+    jumpPower: -12
+  };
 
-    <section id="contacts">
-        <h2>Свяжитесь с нами:</h2>
-        <address>
-            Адрес: г. Москва, ул. Тверская, д. 1<br>
-            Телефон: +7 (495) 123-45-67
-        </address>
-    </section>
+  const groundY = 350;
+  const obstacles = [];
 
-    <footer>
-        © 2025 Бобер Банк
-    </footer>
+  function spawnObstacle() {
+    const isSpike = Math.random() < 0.5;
+    const obs = {
+      x: -50,
+      y: groundY - (isSpike ? 20 : 40),
+      width: isSpike ? 20 : 40,
+      height: isSpike ? 20 : 40,
+      color: isSpike ? "red" : "gray",
+      type: isSpike ? "spike" : "block"
+    };
+    obstacles.push(obs);
+  }
 
-    <script src="script.js"></script>
+  setInterval(spawnObstacle, 1200);
+
+  function update() {
+    // gravity
+    player.dy += gravity;
+    player.y += player.dy;
+
+    // ground collision
+    if (player.y + player.height > groundY) {
+      player.y = groundY - player.height;
+      player.dy = 0;
+      isJumping = false;
+    }
+
+    // move obstacles
+    for (let i = 0; i < obstacles.length; i++) {
+      obstacles[i].x += 5;
+    }
+
+    // collision check
+    for (let obs of obstacles) {
+      if (
+        player.x < obs.x + obs.width &&
+        player.x + player.width > obs.x &&
+        player.y < obs.y + obs.height &&
+        player.y + player.height > obs.y
+      ) {
+        alert("💥 Проиграл!");
+        location.reload();
+      }
+    }
+
+    // remove old obstacles
+    while (obstacles.length > 0 && obstacles[0].x > canvas.width) {
+      obstacles.shift();
+    }
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // ground
+    ctx.fillStyle = "#444";
+    ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
+
+    // player
+    ctx.fillStyle = player.color;
+    ctx.fillRect(player.x, player.y, player.width, player.height);
+
+    // obstacles
+    for (let obs of obstacles) {
+      ctx.fillStyle = obs.color;
+      if (obs.type === "spike") {
+        ctx.beginPath();
+        ctx.moveTo(obs.x, obs.y + obs.height);
+        ctx.lineTo(obs.x + obs.width / 2, obs.y);
+        ctx.lineTo(obs.x + obs.width, obs.y + obs.height);
+        ctx.closePath();
+        ctx.fill();
+      } else {
+        ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+      }
+    }
+  }
+
+  function gameLoop() {
+    update();
+    draw();
+    requestAnimationFrame(gameLoop);
+  }
+
+  document.addEventListener("keydown", (e) => {
+    if ((e.code === "Space" || e.code === "ArrowUp") && !isJumping) {
+      player.dy = player.jumpPower;
+      isJumping = true;
+    }
+  });
+
+  gameLoop();
+</script>
 </body>
 </html>
