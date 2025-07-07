@@ -1,178 +1,216 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <title>Бегущий Стикман</title>
+  <meta charset="UTF-8" />
+  <title>Стикман GO</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: #111; overflow: hidden; font-family: sans-serif; }
-    canvas { display: block; background: #222; margin: 0 auto; }
-    #ui {
-      position: absolute; top: 10px; left: 10px; color: white;
-      font-size: 18px; z-index: 10;
+    canvas { background: linear-gradient(to top, #444, #222); display: block; margin: auto; }
+    #menu {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      background: #111; padding: 20px; border-radius: 15px;
+      color: white; text-align: center; display: none;
     }
-    #pauseBtn {
-      position: absolute; top: 10px; right: 10px;
-      padding: 10px 15px; background: #444; color: white;
-      border: none; cursor: pointer;
+    button {
+      margin-top: 10px; padding: 10px 20px;
+      background: #28a; color: white;
+      border: none; border-radius: 8px;
+      cursor: pointer;
     }
+    #coinCount, #score { position: absolute; top: 10px; color: white; font-size: 20px; font-family: sans-serif; }
+    #coinCount { left: 10px; }
+    #score { right: 10px; }
   </style>
 </head>
 <body>
   <canvas id="game" width="800" height="400"></canvas>
-  <div id="ui">
-    Очки: <span id="score">0</span><br>
-    Монеты: <span id="coins">0</span>
+  <div id="coinCount">Монеты: 0</div>
+  <div id="score">Очки: 0</div>
+
+  <div id="menu">
+    <h2>Стикман GO</h2>
+    <button onclick="startGame()">Начать</button>
+    <button onclick="buySkin()">Купить скин (10 монет)</button>
   </div>
-  <button id="pauseBtn">Пауза</button>
 
   <script>
-    const canvas = document.getElementById("game");
-    const ctx = canvas.getContext("2d");
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    const coinDisplay = document.getElementById('coinCount');
+    const scoreDisplay = document.getElementById('score');
+    const menu = document.getElementById('menu');
 
-    let player = {
-      x: 100, y: 300, w: 30, h: 50, vy: 0, jump: false, skin: "white"
-    };
-
-    let gravity = 0.8;
-    let ground = 350;
-    let obstacles = [];
-    let coins = [];
-    let bosses = [];
-    let score = 0;
-    let coinCount = 0;
-    let paused = false;
-    let frames = 0;
-
-    document.getElementById("pauseBtn").onclick = () => paused = !paused;
-
-    document.addEventListener("keydown", e => {
-      if (e.code === "Space" && player.y >= ground) {
-        player.vy = -15;
-      }
-    });
-
-    function spawnObstacle() {
-      obstacles.push({ x: 800, y: ground, w: 30, h: 50 });
-    }
-
-    function spawnCoin() {
-      coins.push({ x: 800, y: ground - 50, r: 10 });
-    }
-
-    function spawnBoss() {
-      bosses.push({ x: 800, y: ground - 100, w: 60, h: 100 });
-    }
+    let player = { x: 100, y: 300, w: 40, h: 40, vy: 0, jumping: false, color: 'white' };
+    let obstacles = [], coins = [], boss = null;
+    let gravity = 1, score = 0, coinsCollected = 0;
+    let gameRunning = false;
 
     function drawPlayer() {
-      ctx.fillStyle = player.skin;
+      ctx.fillStyle = player.color;
       ctx.fillRect(player.x, player.y, player.w, player.h);
     }
 
+    function createObstacle() {
+      obstacles.push({ x: canvas.width, y: 360, w: 30, h: 40 });
+    }
+
+    function createCoin() {
+      coins.push({ x: canvas.width, y: 250, r: 8 });
+    }
+
+    function createBoss() {
+      boss = { x: canvas.width, y: 280, w: 80, h: 80, color: 'red' };
+    }
+
+    function drawBoss() {
+      if (boss) {
+        ctx.fillStyle = boss.color;
+        ctx.fillRect(boss.x, boss.y, boss.w, boss.h);
+      }
+    }
+
     function drawObstacles() {
-      ctx.fillStyle = "red";
-      obstacles.forEach(o => ctx.fillRect(o.x, o.y, o.w, o.h));
+      ctx.fillStyle = 'brown';
+      for (let obs of obstacles) {
+        ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+      }
     }
 
     function drawCoins() {
-      ctx.fillStyle = "gold";
-      coins.forEach(c => {
+      ctx.fillStyle = 'yellow';
+      for (let coin of coins) {
         ctx.beginPath();
-        ctx.arc(c.x, c.y, c.r, 0, Math.PI * 2);
+        ctx.arc(coin.x, coin.y, coin.r, 0, Math.PI * 2);
         ctx.fill();
-      });
-    }
-
-    function drawBosses() {
-      ctx.fillStyle = "purple";
-      bosses.forEach(b => ctx.fillRect(b.x, b.y, b.w, b.h));
+      }
     }
 
     function update() {
-      if (paused) return;
-
-      frames++;
-      score += 0.05;
-
-      player.vy += gravity;
-      player.y += player.vy;
-      if (player.y > ground) player.y = ground;
-
-      if (frames % 120 === 0) spawnObstacle();
-      if (frames % 180 === 0) spawnCoin();
-      if (Math.floor(score) % 25 === 0 && !bosses.some(b => b.x > 400)) spawnBoss();
-
-      obstacles.forEach(o => o.x -= 4);
-      coins.forEach(c => c.x -= 4);
-      bosses.forEach(b => b.x -= 2);
-
-      obstacles = obstacles.filter(o => o.x + o.w > 0);
-      coins = coins.filter(c => c.x + c.r > 0);
-      bosses = bosses.filter(b => b.x + b.w > 0);
-
-      // Столкновения с препятствиями
-      obstacles.forEach(o => {
-        if (
-          player.x < o.x + o.w &&
-          player.x + player.w > o.x &&
-          player.y < o.y + o.h &&
-          player.y + player.h > o.y
-        ) {
-          resetGame();
-        }
-      });
-
-      // Подбор монет
-      coins.forEach((c, i) => {
-        const dx = player.x + player.w / 2 - c.x;
-        const dy = player.y + player.h / 2 - c.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < c.r + player.w / 2) {
-          coinCount++;
-          coins.splice(i, 1);
-        }
-      });
-
-      // Столкновение с боссом
-      bosses.forEach(b => {
-        if (
-          player.x < b.x + b.w &&
-          player.x + player.w > b.x &&
-          player.y < b.y + b.h &&
-          player.y + player.h > b.y
-        ) {
-          resetGame();
-        }
-      });
-
-      document.getElementById("score").innerText = Math.floor(score);
-      document.getElementById("coins").innerText = coinCount;
-    }
-
-        function resetGame() {
-      player.y = ground;
-      player.vy = 0;
-      score = 0;
-      coinCount = 0;
-      obstacles = [];
-      coins = [];
-      bosses = [];
-      frames = 0;
-    }
-
-    function gameLoop() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      update();
+      // Гравитация
+      player.vy += gravity;
+      player.y += player.vy;
+
+      if (player.y >= 300) {
+        player.y = 300;
+        player.vy = 0;
+        player.jumping = false;
+      }
+
+      // Обновление препятствий
+      for (let obs of obstacles) obs.x -= 5;
+      obstacles = obstacles.filter(o => o.x + o.w > 0);
+
+      // Обновление монет
+      for (let coin of coins) coin.x -= 5;
+      coins = coins.filter(c => c.x + c.r > 0);
+
+      // Проверка коллизий
+      for (let obs of obstacles) {
+        if (player.x < obs.x + obs.w &&
+            player.x + player.w > obs.x &&
+            player.y < obs.y + obs.h &&
+            player.y + player.h > obs.y) {
+          endGame();
+        }
+      }
+
+      for (let i = coins.length - 1; i >= 0; i--) {
+        let coin = coins[i];
+        if (Math.abs(player.x - coin.x) < 20 && Math.abs(player.y - coin.y) < 30) {
+          coins.splice(i, 1);
+          coinsCollected++;
+        }
+      }
+
+      if (boss) {
+        boss.x -= 3;
+        if (player.x < boss.x + boss.w &&
+            player.x + player.w > boss.x &&
+            player.y < boss.y + boss.h &&
+            player.y + player.h > boss.y) {
+          endGame();
+        }
+        if (boss.x + boss.w < 0) boss = null;
+      }
+
+      // Отображение
       drawPlayer();
       drawObstacles();
       drawCoins();
-      drawBosses();
+      drawBoss();
 
-      requestAnimationFrame(gameLoop);
+          // Обновление UI
+      coinDisplay.textContent = 'Монеты: ' + coinsCollected;
+      scoreDisplay.textContent = 'Очки: ' + score;
+
+      if (gameRunning) requestAnimationFrame(update);
     }
 
-    gameLoop();
+    function jump() {
+      if (!player.jumping) {
+        player.vy = -15;
+        player.jumping = true;
+      }
+    }
+
+    function startGame() {
+      player = { x: 100, y: 300, w: 40, h: 40, vy: 0, jumping: false, color: player.color };
+      obstacles = [];
+      coins = [];
+      boss = null;
+      score = 0;
+      gameRunning = true;
+      menu.style.display = 'none';
+      update();
+
+      // Генерация препятствий
+      setInterval(() => {
+        if (gameRunning) createObstacle();
+      }, 1500);
+
+      // Генерация монет
+      setInterval(() => {
+        if (gameRunning) createCoin();
+      }, 2000);
+
+      // Очки и боссы
+      setInterval(() => {
+        if (gameRunning) {
+          score++;
+          if (score % 25 === 0) createBoss();
+        }
+      }, 1000);
+    }
+
+    function endGame() {
+      gameRunning = false;
+      menu.style.display = 'block';
+    }
+
+    function buySkin() {
+      if (coinsCollected >= 10) {
+        coinsCollected -= 10;
+        player.color = getRandomColor();
+        alert("Новый скин активирован!");
+      } else {
+        alert("Недостаточно монет!");
+      }
+    }
+
+    function getRandomColor() {
+      const colors = ['cyan', 'lime', 'orange', 'magenta', 'blue', 'pink'];
+      return colors[Math.floor(Math.random() * colors.length)];
+    }
+
+    // Контроль
+    canvas.addEventListener('click', () => {
+      if (gameRunning) jump();
+    });
+
+    menu.style.display = 'block';
   </script>
 </body>
 </html>
