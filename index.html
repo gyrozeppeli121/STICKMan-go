@@ -4,11 +4,15 @@
   <meta charset="UTF-8">
   <title>Бегущий Стикман</title>
   <style>
-    body {
+    html, body {
       margin: 0;
+      padding: 0;
       overflow: hidden;
+      width: 100%;
+      height: 100%;
       background-color: #222;
     }
+
     canvas {
       display: block;
       background: linear-gradient(to bottom, #333, #111);
@@ -16,18 +20,31 @@
   </style>
 </head>
 <body>
-<canvas id="game" width="800" height="400"></canvas>
+<canvas id="game"></canvas>
 
 <script>
   const canvas = document.getElementById("game");
   const ctx = canvas.getContext("2d");
 
+  function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+
+  window.addEventListener("resize", resizeCanvas);
+  resizeCanvas();
+
+  // Игровые переменные
   let gravity = 0.6;
   let isJumping = false;
+  let score = 0;
+  let highScore = 0;
+
+  const groundY = canvas.height - 100;
 
   const player = {
-    x: 700,
-    y: 300,
+    x: canvas.width - 100,
+    y: groundY - 50,
     width: 30,
     height: 50,
     color: "white",
@@ -35,7 +52,6 @@
     jumpPower: -12
   };
 
-  const groundY = 350;
   const obstacles = [];
 
   function spawnObstacle() {
@@ -54,23 +70,22 @@
   setInterval(spawnObstacle, 1200);
 
   function update() {
-    // gravity
+    // Обновление позиции игрока
     player.dy += gravity;
     player.y += player.dy;
 
-    // ground collision
     if (player.y + player.height > groundY) {
       player.y = groundY - player.height;
       player.dy = 0;
       isJumping = false;
     }
 
-    // move obstacles
+    // Обновление и перемещение препятствий
     for (let i = 0; i < obstacles.length; i++) {
       obstacles[i].x += 5;
     }
 
-    // collision check
+    // Проверка столкновений
     for (let obs of obstacles) {
       if (
         player.x < obs.x + obs.width &&
@@ -78,29 +93,40 @@
         player.y < obs.y + obs.height &&
         player.y + player.height > obs.y
       ) {
-        alert("💥 Проиграл!");
+        alert(💥 Проиграл! Твой счёт: ${score});
         location.reload();
       }
     }
 
-    // remove old obstacles
+    // Очистка старых препятствий и увеличение счёта
     while (obstacles.length > 0 && obstacles[0].x > canvas.width) {
       obstacles.shift();
+      score++;
+      if (score > highScore) highScore = score;
     }
+  }
+
+  function drawScore() {
+    ctx.font = "bold 32px Arial";
+    ctx.fillStyle = "#FFD700";
+    ctx.fillText("Счёт: " + score, 20, 50);
+    ctx.font = "20px Arial";
+    ctx.fillStyle = "#ccc";
+    ctx.fillText("Рекорд: " + highScore, 20, 80);
   }
 
   function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // ground
+    // Земля
     ctx.fillStyle = "#444";
     ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
 
-    // player
+    // Игрок
     ctx.fillStyle = player.color;
     ctx.fillRect(player.x, player.y, player.width, player.height);
 
-    // obstacles
+    // Препятствия
     for (let obs of obstacles) {
       ctx.fillStyle = obs.color;
       if (obs.type === "spike") {
@@ -114,6 +140,8 @@
         ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
       }
     }
+
+    drawScore();
   }
 
   function gameLoop() {
