@@ -2,11 +2,11 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Бегущий Стикман</title>
+  <title>Стикмен-Бегун</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: sans-serif; background: #222; overflow: hidden; color: white; }
-    canvas { background: #333; display: block; margin: 0 auto; margin-top: 20px; border: 2px solid #fff; }
+    body { background: #222; font-family: sans-serif; color: white; overflow: hidden; }
+    canvas { background: #333; display: block; margin: 20px auto; border: 2px solid white; }
     #ui {
       text-align: center;
       margin-top: 10px;
@@ -53,15 +53,54 @@
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
-let player = { x: 50, y: 300, size: 30, color: "white", vy: 0, jumpPower: -10, grounded: true };
+let player = {
+  x: 100, y: 300, vy: 0,
+  width: 20, height: 60,
+  color: "white",
+  jumpPower: -10,
+  grounded: true
+};
+
 let gravity = 0.5;
 let obstacles = [];
 let coins = [];
-let bosses = [];
 let score = 0;
 let coinCount = 0;
 let paused = false;
-let skin = "white";
+let frameCount = 0;
+
+// Человеческая фигура
+function drawStickman(x, y, color) {
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 3;
+
+  // Голова
+  ctx.beginPath();
+  ctx.arc(x, y, 10, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Тело
+  ctx.beginPath();
+  ctx.moveTo(x, y + 10);
+  ctx.lineTo(x, y + 35);
+  ctx.stroke();
+
+  // Руки
+  ctx.beginPath();
+  ctx.moveTo(x, y + 15);
+  ctx.lineTo(x - 10, y + 25);
+  ctx.moveTo(x, y + 15);
+  ctx.lineTo(x + 10, y + 25);
+  ctx.stroke();
+
+  // Ноги
+  ctx.beginPath();
+  ctx.moveTo(x, y + 35);
+  ctx.lineTo(x - 8, y + 50);
+  ctx.moveTo(x, y + 35);
+  ctx.lineTo(x + 8, y + 50);
+  ctx.stroke();
+}
 
 function spawnObstacle() {
   obstacles.push({ x: 600, y: 340, width: 20, height: 60 });
@@ -71,13 +110,60 @@ function spawnCoin() {
   coins.push({ x: 600, y: Math.random() * 200 + 100, radius: 10 });
 }
 
-function spawnBoss() {
-  bosses.push({ x: 600, y: 250, width: 60, height: 100, speed: 3 });
+function update() {
+  if (paused) return;
+
+  frameCount++;
+
+  player.vy += gravity;
+  player.y += player.vy;
+
+  if (player.y + player.height > 370) {
+    player.y = 370 - player.height;
+    player.vy = 0;
+    player.grounded = true;
+  }
+
+  for (let i = obstacles.length - 1; i >= 0; i--) {
+    obstacles[i].x -= 5;
+    if (
+      player.x < obstacles[i].x + obstacles[i].width &&
+      player.x + player.width > obstacles[i].x &&
+      player.y < obstacles[i].y + obstacles[i].height &&
+      player.y + player.height > obstacles[i].y
+    ) {
+      alert("Ты проиграл!");
+      document.location.reload();
+    }
+    if (obstacles[i].x < -20) obstacles.splice(i, 1);
+  }
+
+  for (let i = coins.length - 1; i >= 0; i--) {
+    coins[i].x -= 4;
+    let dx = player.x - coins[i].x;
+    let dy = player.y - coins[i].y;
+    if (Math.sqrt(dx * dx + dy * dy) < coins[i].radius + 20) {
+      coinCount++;
+      coins.splice(i, 1);
+      document.getElementById("coins").innerText = coinCount;
+    }
+    if (coins[i] && coins[i].x < -20) coins.splice(i, 1);
+  }
+
+  if (frameCount % 10 === 0) {
+    score++;
+    document.getElementById("score").innerText = score;
+  }
+
+  if (frameCount % 60 === 0) spawnObstacle();
+  if (frameCount % 80 === 0) spawnCoin();
 }
 
-function drawPlayer() {
-  ctx.fillStyle = player.color;
-  ctx.fillRect(player.x, player.y, player.size, player.size);
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawStickman(player.x, player.y, player.color);
+  drawObstacles();
+  drawCoins();
 }
 
 function drawObstacles() {
@@ -94,89 +180,6 @@ function drawCoins() {
     ctx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
     ctx.fill();
   }
-}
-
-function drawBosses() {
-  ctx.fillStyle = "purple";
-  for (let b of bosses) {
-    ctx.fillRect(b.x, b.y, b.width, b.height);
-  }
-}
-
-function update() {
-  if (paused) return;
-
-  player.vy += gravity;
-  player.y += player.vy;
-
-  if (player.y + player.size > 370) {
-    player.y = 370 - player.size;
-    player.vy = 0;
-    player.grounded = true;
-  }
-
-  // Obstacles
-  for (let i = obstacles.length - 1; i >= 0; i--) {
-    obstacles[i].x -= 5;
-    if (
-      player.x < obstacles[i].x + obstacles[i].width &&
-      player.x + player.size > obstacles[i].x &&
-      player.y < obstacles[i].y + obstacles[i].height &&
-      player.y + player.size > obstacles[i].y
-    ) {
-      alert("Ты проиграл!");
-      document.location.reload();
-    }
-    if (obstacles[i].x < -20) obstacles.splice(i, 1);
-  }
-
-  // Coins
-  for (let i = coins.length - 1; i >= 0; i--) {
-    coins[i].x -= 4;
-    let dx = player.x + player.size / 2 - coins[i].x;
-    let dy = player.y + player.size / 2 - coins[i].y;
-    if (Math.sqrt(dx * dx + dy * dy) < coins[i].radius + player.size / 2) {
-      coinCount++;
-      coins.splice(i, 1);
-      document.getElementById("coins").innerText = coinCount;
-    }
-    if (coins[i] && coins[i].x < -20) coins.splice(i, 1);
-  }
-
-  // Bosses
-  for (let i = bosses.length - 1; i >= 0; i--) {
-    bosses[i].x -= bosses[i].speed;
-    if (
-      player.x < bosses[i].x + bosses[i].width &&
-      player.x + player.size > bosses[i].x &&
-      player.y < bosses[i].y + bosses[i].height &&
-      player.y + player.size > bosses[i].y
-    ) {
-      alert("Босс поймал тебя!");
-      document.location.reload();
-    }
-    if (bosses[i].x < -100) bosses.splice(i, 1);
-  }
-
-  score++;
-  document.getElementById("score").innerText = score;
-
-    // Спавн боссов
-  if (score % 25 === 0 && score !== 0 && bosses.length === 0) {
-    spawnBoss();
-  }
-
-  // Спавн препятствий и монет
-  if (score % 60 === 0) spawnObstacle();
-  if (score % 80 === 0) spawnCoin();
-}
-
-function draw() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  drawPlayer();
-  drawObstacles();
-  drawCoins();
-  drawBosses();
 }
 
 function gameLoop() {
