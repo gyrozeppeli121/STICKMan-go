@@ -161,8 +161,7 @@ let player = {
 
 let ground = canvas.height - 50;
 let spikes = [], blocks = [], coinList = [], boss = null;
-let score = 0, lives = 3, paused = false, started = false, gameSpeed = 6;
-  function drawPlayer() {
+let score = 0, lives = 3, paused = false, started = false, gameSpeed = 6;function drawPlayer() {
   ctx.save();
   ctx.translate(player.x, player.y);
   ctx.fillStyle = player.color;
@@ -294,8 +293,7 @@ function gameLoop() {
       }
     });
 
-    if (boss) {
-      boss.x -= gameSpeed / 2;
+    if (boss) {boss.x -= gameSpeed / 2;
       ctx.fillStyle = "purple";
       ctx.fillRect(boss.x, boss.y, boss.width, boss.height);
       ctx.fillStyle = "white";
